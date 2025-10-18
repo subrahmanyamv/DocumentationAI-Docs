@@ -1,0 +1,1648 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Map Service",
+    "description": "\n    Map Service provides map data.\n    \n    ## Authentication\n\n    For all endpoints, you need to include your Authentication token as a header: `Authorization: Bearer token`\n    ",
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "/svc/map"
+    }
+  ],
+  "paths": {
+    "/layers/query": {
+      "post": {
+        "tags": [
+          "Map API"
+        ],
+        "summary": "Query Map Layers",
+        "description": "Query one or more map layers with optional filters and bounding box.\n\nThis endpoint allows clients to request multiple map layers in a single\ncall. Each layer may be specified as a simple name or with extended\noptions (fields, filters, bbox).\n\nArgs:\n    req (Request): The FastAPI request context.\n    request (MapQueryRequest): Map query definition including:\n        - ``layers``: List of layer names or detailed layer inputs.\n        - ``filters``: Optional per-entity filter definitions.\n        - ``bbox``: Optional bounding box [minx, miny, maxx, maxy].\n        - ``context``: Optional context values (e.g. site_id).\n        - ``auto_fit``: Whether to auto-fit map viewport.\n\nReturns:\n    MapQueryResponse: A collection of layer results, each in a\n    GeoJSON-compatible structure with metadata.\n\nExample:\n    **Multi-Layer Request**\n\n    .. code-block:: json\n\n        {\n          \"layers\": [\"devices\", \"device_links\", \"nodes\", \"node_device_links\"],\n          \"filters\": {\n            \"devices\": {\n              \"status\": [\"Online\"],\n              \"prod_id\": 277\n            }\n          },\n          \"bbox\": [\n            -84.16284088122629,\n            33.89537509010729,\n            -84.04194348920977,\n            33.99224608410038\n          ],\n          \"context\": {\"site_id\": \"13111e33-285e-40c1-8bbc-538bef2fa9e2\"},\n          \"auto_fit\": false\n        }",
+        "operationId": "query_map_layers_layers_query_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MapQueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapQueryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "gatewayHeader": []
+          }
+        ]
+      }
+    },
+    "/layers/metadata": {
+      "get": {
+        "tags": [
+          "Map API"
+        ],
+        "summary": "Get Metadata",
+        "operationId": "get_metadata_layers_metadata_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "gatewayHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "layers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated layer names",
+              "title": "Layers"
+            },
+            "description": "Comma-separated layer names"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Get Metadata Layers Metadata Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/layers/bbox": {
+      "get": {
+        "tags": [
+          "Map API"
+        ],
+        "summary": "Get Bbox",
+        "description": "Returns per-layer bounding boxes. Examples:\n  /layers/bbox?layers=devices\n  /layers/bbox?layers=gateways\n  /layers/bbox?layers=devices,gateways",
+        "operationId": "get_bbox_layers_bbox_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "gatewayHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "layers",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated list of layers, e.g., devices, gateways",
+              "title": "Layers"
+            },
+            "description": "Comma-separated list of layers, e.g., devices, gateways"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/query/execute": {
+      "post": {
+        "tags": [
+          "Map Query API"
+        ],
+        "summary": "Execute Query",
+        "description": "Execute an ad-hoc query.\n\nThis endpoint runs a query defined entirely in the request body. Clients\ncan specify entity, selected fields, filters, joins, aggregations, sorting,\npagination, and output format.\n\nArgs:\n    req (Request): The FastAPI request context.\n    query (QueryDefinition): Query definition including entity, select\n        fields, filters, joins, aggregations, order_by, pagination,\n        and output_format (``geojson`` or ``csv``).\n\nReturns:\n    Union[QueryResult, CSVResult]:\n        - **QueryResult**: GeoJSON-compatible response with ``type``, ``meta``,\n          and ``features``.\n        - **CSVResult**: CSV data (as a string) plus ``meta``.\n\nExample:\n    **Request**\n\n    .. code-block:: json\n\n        {\n          \"entity\": \"Amp\",\n          \"select\": [\"device_eui\", {\"field\": \"status\", \"alias\": \"state\"}],\n          \"filters\": {\n            \"operator\": \"AND\",\n            \"conditions\": [\n              {\"field\": \"status\", \"op\": \"=\", \"value\": \"Offline\"},\n              {\"field\": \"is_enabled\", \"op\": \"=\", \"value\": true}\n            ]\n          },\n          \"order_by\": [\n            {\"field\": \"device_eui\", \"direction\": \"desc\"}\n          ],\n          \"pagination\": {\"limit\": 50, \"offset\": 0},\n          \"output_format\": \"geojson\"\n        }\n\n    **GeoJSON Response**\n\n    .. code-block:: json\n\n        {\n          \"type\": \"FeatureCollection\",\n          \"meta\": {\n            \"count\": 1,\n            \"columns\": [\"device_eui\", \"state\"],\n            \"pagination\": {\"limit\": 50, \"offset\": 0}\n          },\n          \"features\": [\n            {\n              \"type\": \"Feature\",\n              \"properties\": {\n                \"device_eui\": \"0102030405060101\",\n                \"state\": \"Offline\"\n              },\n              \"geometry\": null\n            }\n          ]\n        }",
+        "operationId": "execute_query_query_execute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryDefinition"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "gatewayHeader": []
+          }
+        ]
+      }
+    },
+    "/query/saved_queries": {
+      "get": {
+        "tags": [
+          "Map Query API"
+        ],
+        "summary": "List Saved Queries",
+        "operationId": "list_saved_queries_query_saved_queries_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedQuerySummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Saved Queries Query Saved Queries Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "gatewayHeader": []
+          }
+        ]
+      }
+    },
+    "/query/saved_queries/{query_id}": {
+      "get": {
+        "tags": [
+          "Map Query API"
+        ],
+        "summary": "Get Saved Query",
+        "operationId": "get_saved_query_query_saved_queries__query_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "gatewayHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "query_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Query Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedQueryDefinition"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/query/saved_queries/{query_id}/execute": {
+      "post": {
+        "tags": [
+          "Map Query API"
+        ],
+        "summary": "Execute Saved Query",
+        "description": "Execute a saved query with the given parameters.\n\nThis endpoint retrieves the saved query definition identified by ``query_id``\nand executes it using the provided execution request payload. Runtime\nparameters, pagination, sorting, and output format can all be specified.\n\nThe response format depends on ``output_format`` in the request:\n\n  * ``\"geojson\"`` → returns a :class:`QueryResult`\n  * ``\"csv\"`` → returns a :class:`CSVResult`\n\nArgs:\n    query_id (int): Unique identifier of the saved query to execute.\n    req (SavedQueryExecutionRequest): Execution parameters, including:\n        - ``params``: List of runtime parameter values to substitute into the query.\n        - ``pagination``: Limit/offset settings (default: 50/0).\n        - ``sort``: Order-by definitions.\n        - ``output_format``: Desired output format (``\"geojson\"`` or ``\"csv\"``).\n\nReturns:\n    Union[QueryResult, CSVResult]:\n        - **QueryResult**: GeoJSON-compatible response with ``type``, ``meta``,\n          and ``features``.\n        - **CSVResult**: CSV data (as a string) plus ``meta``.\n\nExample:\n\n        POST /saved_queries/42/execute\n        {\n          \"params\": [\n            {\n              \"param_name\": \"gateway\",\n              \"value\": \"0102030405060101\"\n            },\n            {\n              \"param_name\": \"status\",\n              \"value\": [\"Offline\"]\n            },\n            {\n              \"param_name\": \"is_enabled\",\n              \"value\": true\n            }\n          ],\n          \"pagination\": {\n            \"limit\": 50,\n            \"offset\": 0\n          },\n          \"sort\": [\n            { \"field\": \"Amp.device_eui\", \"direction\": \"desc\" }\n          ],\n          \"output_format\": \"geojson\"\n        }",
+        "operationId": "execute_saved_query_query_saved_queries__query_id__execute_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "gatewayHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "query_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Query Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedQueryExecutionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/healthcheck": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Health check",
+        "operationId": "handle_healthcheck_healthcheck_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Version",
+        "operationId": "handle_version_version_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AggregationDef": {
+        "properties": {
+          "func": {
+            "type": "string",
+            "enum": [
+              "count",
+              "sum",
+              "avg",
+              "min",
+              "max"
+            ],
+            "title": "Func"
+          },
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alias"
+          }
+        },
+        "type": "object",
+        "required": [
+          "func",
+          "field"
+        ],
+        "title": "AggregationDef"
+      },
+      "FieldDef": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "entity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity"
+          },
+          "alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alias"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field"
+        ],
+        "title": "FieldDef"
+      },
+      "FilterDef": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "entity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity"
+          },
+          "op": {
+            "type": "string",
+            "title": "Op"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "op"
+        ],
+        "title": "FilterDef"
+      },
+      "FilterGroup": {
+        "properties": {
+          "operator": {
+            "type": "string",
+            "title": "Operator"
+          },
+          "conditions": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FilterGroup"
+                },
+                {
+                  "$ref": "#/components/schemas/FilterDef"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Conditions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operator",
+          "conditions"
+        ],
+        "title": "FilterGroup"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "JoinDef": {
+        "properties": {
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "on": {
+            "type": "string",
+            "title": "On"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "inner",
+              "left"
+            ],
+            "title": "Type",
+            "default": "inner"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity",
+          "on"
+        ],
+        "title": "JoinDef"
+      },
+      "LayerInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fields"
+          },
+          "style_hint": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style Hint",
+            "default": false
+          },
+          "depends_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depends On"
+          },
+          "visibility_rule": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visibility Rule"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "LayerInput"
+      },
+      "MapQueryRequest": {
+        "properties": {
+          "layers": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/components/schemas/LayerInput"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Layers"
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filters"
+          },
+          "bbox": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bbox"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "auto_fit": {
+            "type": "boolean",
+            "title": "Auto Fit",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "layers"
+        ],
+        "title": "MapQueryRequest"
+      },
+      "MapQueryResponse": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "MapQueryResponse"
+      },
+      "OrderByDef": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "entity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity"
+          },
+          "direction": {
+            "type": "string",
+            "title": "Direction"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "direction"
+        ],
+        "title": "OrderByDef"
+      },
+      "PaginationDef": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 50
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "PaginationDef"
+      },
+      "QueryDefinition": {
+        "properties": {
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "select": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/components/schemas/FieldDef"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Select"
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilterGroup"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "joins": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/JoinDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joins"
+          },
+          "group_by": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FieldDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group By"
+          },
+          "aggregations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AggregationDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aggregations"
+          },
+          "order_by": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/OrderByDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order By"
+          },
+          "pagination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaginationDef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output_format": {
+            "$ref": "#/components/schemas/QueryOutputFormat",
+            "default": "geojson"
+          },
+          "geometry_field": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FieldDef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unique_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FieldDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unique Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity",
+          "select"
+        ],
+        "title": "QueryDefinition"
+      },
+      "QueryOutputFormat": {
+        "type": "string",
+        "enum": [
+          "geojson",
+          "csv"
+        ],
+        "title": "QueryOutputFormat"
+      },
+      "SavedAggregationDef": {
+        "properties": {
+          "func": {
+            "type": "string",
+            "enum": [
+              "count",
+              "sum",
+              "avg",
+              "min",
+              "max"
+            ],
+            "title": "Func"
+          },
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alias"
+          }
+        },
+        "type": "object",
+        "required": [
+          "func",
+          "field"
+        ],
+        "title": "SavedAggregationDef"
+      },
+      "SavedFieldDef": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "transform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transform"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "label"
+        ],
+        "title": "SavedFieldDef"
+      },
+      "SavedFilterDef": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "op": {
+            "type": "string",
+            "title": "Op"
+          },
+          "value": {
+            "anyOf": [
+              {
+
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "param_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Param Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "op"
+        ],
+        "title": "SavedFilterDef"
+      },
+      "SavedFilterGroup": {
+        "properties": {
+          "operator": {
+            "type": "string",
+            "title": "Operator",
+            "default": "AND"
+          },
+          "conditions": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SavedFilterGroup"
+                },
+                {
+                  "$ref": "#/components/schemas/SavedFilterDef"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Conditions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conditions"
+        ],
+        "title": "SavedFilterGroup"
+      },
+      "SavedJoinDef": {
+        "properties": {
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "on": {
+            "type": "string",
+            "title": "On"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "inner",
+              "left"
+            ],
+            "title": "Type",
+            "default": "inner"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity",
+          "on"
+        ],
+        "title": "SavedJoinDef"
+      },
+      "SavedOrderByDef": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "direction": {
+            "type": "string",
+            "title": "Direction",
+            "default": "asc"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field"
+        ],
+        "title": "SavedOrderByDef"
+      },
+      "SavedPaginationDef": {
+        "properties": {
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "title": "SavedPaginationDef"
+      },
+      "SavedQueryCore": {
+        "properties": {
+          "joins": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SavedJoinDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joins"
+          },
+          "group_by": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SavedFieldDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group By"
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedFilterGroup"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "SavedQueryCore"
+      },
+      "SavedQueryDefinition": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "query_params": {
+            "items": {
+              "$ref": "#/components/schemas/SavedQueryParam"
+            },
+            "type": "array",
+            "title": "Query Params"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/SavedFieldDef"
+            },
+            "type": "array",
+            "title": "Columns"
+          },
+          "pagination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedPaginationDef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "order_by": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SavedOrderByDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order By"
+          },
+          "query_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Type"
+          },
+          "model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Name"
+          },
+          "query_def": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedQueryCore"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aggregations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SavedAggregationDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aggregations"
+          },
+          "supported_formats": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supported Formats",
+            "default": [
+              "geojson"
+            ]
+          },
+          "geometry_field": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedFieldDef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unique_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SavedFieldDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unique Fields"
+          },
+          "ui_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedQueryUIConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "query_params",
+          "columns"
+        ],
+        "title": "SavedQueryDefinition"
+      },
+      "SavedQueryExecutionRequest": {
+        "properties": {
+          "params": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SavedRuntimeParam"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params"
+          },
+          "pagination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedPaginationDef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": {
+              "limit": 50,
+              "offset": 0
+            }
+          },
+          "sort": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SavedOrderByDef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort"
+          },
+          "output_format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Format",
+            "default": "geojson"
+          }
+        },
+        "type": "object",
+        "title": "SavedQueryExecutionRequest"
+      },
+      "SavedQueryParam": {
+        "properties": {
+          "param_name": {
+            "type": "string",
+            "title": "Param Name"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "ui_type": {
+            "type": "string",
+            "title": "Ui Type"
+          },
+          "mandatory": {
+            "type": "boolean",
+            "title": "Mandatory"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator"
+          },
+          "system": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System"
+          },
+          "default_value": {
+            "anyOf": [
+              {
+
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Value"
+          },
+          "options_query_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options Query Id"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "param_name",
+          "label",
+          "ui_type",
+          "mandatory"
+        ],
+        "title": "SavedQueryParam"
+      },
+      "SavedQuerySummary": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "supported_formats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Supported Formats"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "supported_formats"
+        ],
+        "title": "SavedQuerySummary"
+      },
+      "SavedQueryUIAction": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "row",
+              "bulk",
+              "query"
+            ],
+            "title": "Scope",
+            "default": "row"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "SavedQueryUIAction"
+      },
+      "SavedQueryUIConfig": {
+        "properties": {
+          "actions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SavedQueryUIAction"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actions"
+          }
+        },
+        "type": "object",
+        "title": "SavedQueryUIConfig"
+      },
+      "SavedRuntimeParam": {
+        "properties": {
+          "param_name": {
+            "type": "string",
+            "title": "Param Name"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "param_name",
+          "value"
+        ],
+        "title": "SavedRuntimeParam"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "gatewayHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-QL-GW-EUI"
+      }
+    }
+  }
+}
