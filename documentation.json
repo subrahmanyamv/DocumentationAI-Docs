@@ -152,13 +152,6 @@
             "expandable": true,
             "openapi": "api-reference/petstore-openapi.yaml",
             "pages": []
-          },
-          {
-            "group": "Map APIs",
-            "icon": "database",
-            "expandable": true,
-            "openapi": "openapi2.json",
-            "pages": []
           }
         ]
       }
