@@ -156,7 +156,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "type": "object"
                 }
               }
             }
@@ -198,7 +198,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "type": "object"
                 }
               }
             }
@@ -313,7 +313,7 @@
           "Map Query API"
         ],
         "summary": "Execute Saved Query",
-        "description": "Execute a saved query with the given parameters.\n\nThis endpoint retrieves the saved query definition identified by ``query_id``\nand executes it using the provided execution request payload. Runtime\nparameters, pagination, sorting, and output format can all be specified.\n\nThe response format depends on ``output_format`` in the request:\n\n  * ``\"geojson\"`` → returns a :class:`QueryResult`\n  * ``\"csv\"`` → returns a :class:`CSVResult`\n\nArgs:\n    query_id (int): Unique identifier of the saved query to execute.\n    req (SavedQueryExecutionRequest): Execution parameters, including:\n        - ``params``: List of runtime parameter values to substitute into the query.\n        - ``pagination``: Limit/offset settings (default: 50/0).\n        - ``sort``: Order-by definitions.\n        - ``output_format``: Desired output format (``\"geojson\"`` or ``\"csv\"``).\n\nReturns:\n    Union[QueryResult, CSVResult]:\n        - **QueryResult**: GeoJSON-compatible response with ``type``, ``meta``,\n          and ``features``.\n        - **CSVResult**: CSV data (as a string) plus ``meta``.\n\nExample:\n\n        POST /saved_queries/42/execute\n        {\n          \"params\": [\n            {\n              \"param_name\": \"gateway\",\n              \"value\": \"0102030405060101\"\n            },\n            {\n              \"param_name\": \"status\",\n              \"value\": [\"Offline\"]\n            },\n            {\n              \"param_name\": \"is_enabled\",\n              \"value\": true\n            }\n          ],\n          \"pagination\": {\n            \"limit\": 50,\n            \"offset\": 0\n          },\n          \"sort\": [\n            { \"field\": \"Amp.device_eui\", \"direction\": \"desc\" }\n          ],\n          \"output_format\": \"geojson\"\n        }",
+        "description": "Execute a saved query with the given parameters.\n\nThis endpoint retrieves the saved query definition identified by ``query_id``\nand executes it using the provided execution request payload. Runtime\nparameters, pagination, sorting, and output format can all be specified.\n\nThe response format depends on ``output_format`` in the request:\n\n  * ``\"geojson\"`` \u2192 returns a :class:`QueryResult`\n  * ``\"csv\"`` \u2192 returns a :class:`CSVResult`\n\nArgs:\n    query_id (int): Unique identifier of the saved query to execute.\n    req (SavedQueryExecutionRequest): Execution parameters, including:\n        - ``params``: List of runtime parameter values to substitute into the query.\n        - ``pagination``: Limit/offset settings (default: 50/0).\n        - ``sort``: Order-by definitions.\n        - ``output_format``: Desired output format (``\"geojson\"`` or ``\"csv\"``).\n\nReturns:\n    Union[QueryResult, CSVResult]:\n        - **QueryResult**: GeoJSON-compatible response with ``type``, ``meta``,\n          and ``features``.\n        - **CSVResult**: CSV data (as a string) plus ``meta``.\n\nExample:\n\n        POST /saved_queries/42/execute\n        {\n          \"params\": [\n            {\n              \"param_name\": \"gateway\",\n              \"value\": \"0102030405060101\"\n            },\n            {\n              \"param_name\": \"status\",\n              \"value\": [\"Offline\"]\n            },\n            {\n              \"param_name\": \"is_enabled\",\n              \"value\": true\n            }\n          ],\n          \"pagination\": {\n            \"limit\": 50,\n            \"offset\": 0\n          },\n          \"sort\": [\n            { \"field\": \"Amp.device_eui\", \"direction\": \"desc\" }\n          ],\n          \"output_format\": \"geojson\"\n        }",
         "operationId": "execute_saved_query_query_saved_queries__query_id__execute_post",
         "security": [
           {
@@ -350,7 +350,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "type": "object"
                 }
               }
             }
@@ -381,7 +381,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "type": "object"
                 }
               }
             }
@@ -402,7 +402,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "type": "object"
                 }
               }
             }
@@ -984,9 +984,7 @@
           },
           "value": {
             "anyOf": [
-              {
-
-              },
+              {},
               {
                 "type": "null"
               }
@@ -1436,9 +1434,7 @@
           },
           "default_value": {
             "anyOf": [
-              {
-
-              },
+              {},
               {
                 "type": "null"
               }
