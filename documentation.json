@@ -157,7 +157,7 @@
             "group": "Map APIs",
             "icon": "database",
             "expandable": true,
-            "openapi": "api-reference/myapis.json",
+            "openapi": "openapi2.json",
             "pages": []
           }
         ]
