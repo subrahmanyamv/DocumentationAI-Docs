@@ -1,5 +1,5 @@
 {
-  "name": "ACME Company",
+  "name": "Subr",
   "initialRoute": "getting-started/introduction",
   "logo-dark": "https://blob-cdn.documentation.ai/org-9a676b51-6366-4fb8-82b9-8bcebd1e04cd/doc-d763805d-9c20-4ace-b537-11aa3933f9f9/1760013180373-k2duii3j57f-logo-dark-full.svg",
   "logo-light": "https://blob-cdn.documentation.ai/org-9a676b51-6366-4fb8-82b9-8bcebd1e04cd/doc-d763805d-9c20-4ace-b537-11aa3933f9f9/1760013153861-qlexiirnnji-logo-light-full.svg",
@@ -17,16 +17,16 @@
     "actions": {
       "primary": {
         "title": "Get Started",
-        "link": "https://acme.com/signup"
+        "link": "https://subr.com/signup"
       },
       "links": [
         {
           "title": "Login",
-          "link": "https://acme.com/login"
+          "link": "https://subr.com/login"
         },
         {
           "title": "Support",
-          "link": "mailto:support@acme.com"
+          "link": "mailto:support@subr.com"
         }
       ]
     }
